@@ -52,15 +52,20 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 });
 
 // Space key shortcut: press Space on selection → annotate
-document.addEventListener('keydown', (e) => {
+let lastSpaceTrigger = 0;
+function onSpaceKey(e) {
   if (e.code !== 'Space' && e.key !== ' ') return;
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
   const sel = window.getSelection();
   if (!sel || sel.isCollapsed) return;
+  if (Date.now() - lastSpaceTrigger < 300) return; // debounce keydown+keyup
+  lastSpaceTrigger = Date.now();
   e.preventDefault();
   e.stopPropagation();
   handleAddAnnotation();
-}, true);
+}
+window.addEventListener('keydown', onSpaceKey, true);
+document.addEventListener('keyup', onSpaceKey);
 
 // ---- Annotation Editor ----
 
