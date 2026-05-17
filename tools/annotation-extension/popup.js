@@ -1,8 +1,12 @@
 // Query the active tab's content script for current state
 async function getContentState() {
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (!tab?.id) return null;
-  return chrome.tabs.sendMessage(tab.id, { type: 'GET_STATE' });
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab?.id) return null;
+    return await chrome.tabs.sendMessage(tab.id, { type: 'GET_STATE' });
+  } catch {
+    return null;
+  }
 }
 
 // Initialize: show annotation count for current page
@@ -48,8 +52,8 @@ document.getElementById('export-note').addEventListener('click', async () => {
   for (const [url, entries] of byUrl) {
     output += `【${url}】\n`;
     for (const e of entries) {
-      output += `【${e.text}】\n`;
-      output += `【${e.annotation}】\n`;
+      output += `【${e.text ?? ''}】\n`;
+      output += `【${e.annotation ?? ''}】\n`;
     }
     output += '\n';
   }
@@ -71,6 +75,11 @@ document.getElementById('import-file').addEventListener('change', async (e) => {
     const text = await file.text();
     const data = JSON.parse(text);
     if (!Array.isArray(data)) throw new Error('Expected an array');
+    for (const item of data) {
+      if (!item.url || typeof item.text !== 'string' || typeof item.annotation !== 'string') {
+        throw new Error('Invalid annotation format: each entry needs url, text, and annotation');
+      }
+    }
 
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (!tab?.id) throw new Error('No active tab');
@@ -93,6 +102,7 @@ document.getElementById('import-file').addEventListener('change', async (e) => {
 });
 
 // ---- Helpers ----
+let statusTimer = null;
 function downloadFile(content, filename, mimeType) {
   const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
@@ -106,5 +116,6 @@ function downloadFile(content, filename, mimeType) {
 function showStatus(msg) {
   const el = document.getElementById('status');
   el.textContent = msg;
-  setTimeout(() => { el.textContent = ''; }, 3000);
+  if (statusTimer) clearTimeout(statusTimer);
+  statusTimer = setTimeout(() => { el.textContent = ''; statusTimer = null; }, 3000);
 }

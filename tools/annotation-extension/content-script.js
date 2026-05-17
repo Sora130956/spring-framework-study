@@ -314,15 +314,21 @@ function reRenderAllMarkers() {
   const pageAnnotations = getPageAnnotations();
   // Clear existing markers first
   document.querySelectorAll('.__anno_wrapper__').forEach(w => unwrapElement(w));
+  document.querySelectorAll('.__anno_marker__').forEach(m => m.remove());
   document.querySelectorAll('.__anno_editor_host__').forEach(e => e.remove());
 
   // For imported annotations, we can't restore exact DOM positions.
   // Instead, try to find and mark matching text nodes.
   pageAnnotations.forEach(entry => {
-    const found = findTextInDocument(entry.text);
-    if (found) {
-      const wrapper = wrapTextNode(found, entry.text);
-      markAsAnnotated(wrapper, entry);
+    try {
+      const found = findTextInDocument(entry.text);
+      if (found) {
+        const wrapper = wrapTextNode(found, entry.text);
+        markAsAnnotated(wrapper, entry);
+      }
+    } catch (e) {
+      // Skip entries that fail to render — don't break the whole import
+      console.warn('Failed to restore annotation:', entry.id, e);
     }
   });
 }
@@ -362,6 +368,12 @@ function wrapTextNode(found, text) {
   range.setEnd(found.node, found.end);
   const wrapper = document.createElement('span');
   wrapper.className = '__anno_wrapper__';
-  range.surroundContents(wrapper);
+  try {
+    range.surroundContents(wrapper);
+  } catch (e) {
+    range.deleteContents();
+    wrapper.textContent = text;
+    range.insertNode(wrapper);
+  }
   return wrapper;
 }
