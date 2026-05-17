@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <h1>Page Annotations</h1>
+    <p id="page-info">This page: <span id="count">0</span> annotations</p>
+
+    <div class="btn-group">
+      <button id="export-json">Export JSON</button>
+      <button id="export-note">Export Note Format</button>
+      <button id="import-json">Import JSON</button>
+      <input type="file" id="import-file" accept=".json" style="display:none">
+    </div>
+
+    <div id="status" class="status"></div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
