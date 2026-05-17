@@ -51,13 +51,13 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   return true; // keep channel open for async sendResponse
 });
 
-// Mouse side button shortcut: click side button on selection → annotate
-document.addEventListener('mouseup', (e) => {
-  if (e.button !== 3 && e.button !== 4) return; // side buttons only
+// Space key shortcut: press Space on selection → annotate
+document.addEventListener('keydown', (e) => {
+  if (e.code !== 'Space') return;
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
   const sel = window.getSelection();
   if (!sel || sel.isCollapsed) return;
   e.preventDefault();
-  e.stopPropagation();
   handleAddAnnotation();
 });
 
@@ -205,7 +205,7 @@ function markAsAnnotated(wrapper, entry) {
   wrapper.innerHTML = '';
   const marker = document.createElement('span');
   marker.className = '__anno_marker__';
-  marker.style.cssText = 'border-bottom: 2px dotted #9a9588; cursor: pointer;';
+  marker.style.cssText = 'border-bottom: 2px solid #9a9588; cursor: pointer;';
   marker.textContent = entry.text;
   marker.dataset.annoId = entry.id;
   marker.title = entry.annotation;
@@ -314,7 +314,7 @@ function openEditEditor(wrapper, entry) {
 
   deleteBtn.addEventListener('click', () => {
     removeAnnotation(entry.id);
-    unwrapElement(wrapper);
+    wrapper.remove();
     destroyEditor(host);
     activeEditor = null;
   });
