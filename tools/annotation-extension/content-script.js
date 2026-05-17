@@ -50,3 +50,136 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
   return true; // keep channel open for async sendResponse
 });
+
+// ---- Annotation Editor ----
+
+let activeEditor = null; // track currently open editor to prevent duplicates
+
+function handleAddAnnotation() {
+  // Prevent multiple editors open at once
+  if (activeEditor) {
+    destroyEditor(activeEditor);
+    activeEditor = null;
+  }
+
+  const selection = window.getSelection();
+  if (!selection || selection.isCollapsed) return;
+
+  const range = selection.getRangeAt(0);
+  const selectedText = selection.toString().trim();
+  if (!selectedText) return;
+
+  // Create enclosing span to mark the text position
+  const wrapper = document.createElement('span');
+  wrapper.className = '__anno_wrapper__';
+  try {
+    range.surroundContents(wrapper);
+  } catch (e) {
+    // Selection spans multiple elements; fall back to delete+insert
+    range.deleteContents();
+    wrapper.textContent = selectedText;
+    range.insertNode(wrapper);
+  }
+
+  // Insert the editor below the wrapper
+  const editorEl = createEditorElement(selectedText, wrapper);
+  wrapper.after(editorEl);
+
+  activeEditor = editorEl;
+}
+
+function createEditorElement(text, wrapper) {
+  // Shadow DOM host
+  const host = document.createElement('span');
+  host.className = '__anno_editor_host__';
+  const shadow = host.attachShadow({ mode: 'open' });
+
+  shadow.innerHTML = `
+    <style>
+      .anno-editor {
+        display: inline-block;
+        background: #fff;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        padding: 8px;
+        margin: 4px 0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        font-size: 13px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+        max-width: 480px;
+      }
+      .anno-editor textarea {
+        width: 100%;
+        min-height: 60px;
+        border: 1px solid #e0e0e0;
+        border-radius: 4px;
+        padding: 6px;
+        font: inherit;
+        resize: vertical;
+        box-sizing: border-box;
+      }
+      .anno-editor .btn-row {
+        display: flex;
+        gap: 6px;
+        margin-top: 6px;
+      }
+      .anno-editor button {
+        padding: 4px 12px;
+        border: 1px solid #d0d0d0;
+        border-radius: 4px;
+        background: #f5f5f5;
+        cursor: pointer;
+        font: inherit;
+        font-size: 12px;
+      }
+      .anno-editor button.save { background: #1a73e8; color: #fff; border-color: #1a73e8; }
+      .anno-editor button:hover { opacity: 0.85; }
+    </style>
+    <div class="anno-editor">
+      <textarea placeholder="Write your annotation..."></textarea>
+      <div class="btn-row">
+        <button class="save">Save</button>
+        <button class="cancel">Cancel</button>
+        <button class="edit" style="display:none">Edit</button>
+        <button class="delete" style="display:none">Delete</button>
+      </div>
+    </div>
+  `;
+
+  const textarea = shadow.querySelector('textarea');
+  const saveBtn = shadow.querySelector('.save');
+  const cancelBtn = shadow.querySelector('.cancel');
+
+  saveBtn.addEventListener('click', () => {
+    const note = textarea.value.trim();
+    if (!note) return;
+
+    const entry = addAnnotation(text, note);
+    markAsAnnotated(wrapper, entry);
+    destroyEditor(host);
+    activeEditor = null;
+  });
+
+  cancelBtn.addEventListener('click', () => {
+    // Remove the empty wrapper
+    unwrapElement(wrapper);
+    destroyEditor(host);
+    activeEditor = null;
+  });
+
+  return host;
+}
+
+function destroyEditor(host) {
+  if (host && host.parentNode) {
+    host.remove();
+  }
+}
+
+function unwrapElement(wrapper) {
+  const parent = wrapper.parentNode;
+  while (wrapper.firstChild) {
+    parent.insertBefore(wrapper.firstChild, wrapper);
+  }
+  parent.removeChild(wrapper);
+}
