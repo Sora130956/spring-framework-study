@@ -183,3 +183,185 @@ function unwrapElement(wrapper) {
   }
   parent.removeChild(wrapper);
 }
+
+// ---- Marker Rendering ----
+
+function markAsAnnotated(wrapper, entry) {
+  // Replace wrapper's inner content with a marked span
+  wrapper.innerHTML = '';
+  const marker = document.createElement('span');
+  marker.className = '__anno_marker__';
+  marker.style.cssText = 'border-bottom: 2px dotted #888; cursor: pointer;';
+  marker.textContent = entry.text;
+  marker.dataset.annoId = entry.id;
+  marker.title = entry.annotation;
+
+  wrapper.appendChild(marker);
+
+  // Hover: update tooltip with latest annotation
+  marker.addEventListener('mouseenter', () => {
+    const latest = annotations.find(a => a.id === entry.id);
+    if (latest) marker.title = latest.annotation;
+  });
+
+  // Click: re-open editor for editing
+  marker.addEventListener('click', () => {
+    openEditEditor(wrapper, entry);
+  });
+}
+
+function openEditEditor(wrapper, entry) {
+  if (activeEditor) {
+    destroyEditor(activeEditor);
+    activeEditor = null;
+  }
+
+  const host = document.createElement('span');
+  host.className = '__anno_editor_host__';
+  const shadow = host.attachShadow({ mode: 'open' });
+
+  shadow.innerHTML = `
+    <style>
+      .anno-editor {
+        display: inline-block;
+        background: #fff;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        padding: 8px;
+        margin: 4px 0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        font-size: 13px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+        max-width: 480px;
+      }
+      .anno-editor textarea {
+        width: 100%;
+        min-height: 60px;
+        border: 1px solid #e0e0e0;
+        border-radius: 4px;
+        padding: 6px;
+        font: inherit;
+        resize: vertical;
+        box-sizing: border-box;
+      }
+      .anno-editor .btn-row {
+        display: flex;
+        gap: 6px;
+        margin-top: 6px;
+      }
+      .anno-editor button {
+        padding: 4px 12px;
+        border: 1px solid #d0d0d0;
+        border-radius: 4px;
+        background: #f5f5f5;
+        cursor: pointer;
+        font: inherit;
+        font-size: 12px;
+      }
+      .anno-editor button.save { background: #1a73e8; color: #fff; border-color: #1a73e8; }
+      .anno-editor button.delete { background: #d93025; color: #fff; border-color: #d93025; }
+      .anno-editor button:hover { opacity: 0.85; }
+    </style>
+    <div class="anno-editor">
+      <textarea placeholder="Write your annotation...">${escapeHtml(entry.annotation)}</textarea>
+      <div class="btn-row">
+        <button class="save">Save</button>
+        <button class="cancel">Cancel</button>
+        <button class="delete">Delete</button>
+      </div>
+    </div>
+  `;
+
+  const textarea = shadow.querySelector('textarea');
+  const saveBtn = shadow.querySelector('.save');
+  const cancelBtn = shadow.querySelector('.cancel');
+  const deleteBtn = shadow.querySelector('.delete');
+
+  saveBtn.addEventListener('click', () => {
+    const note = textarea.value.trim();
+    if (!note) return;
+    entry.annotation = note;
+    // Update marker display
+    const marker = wrapper.querySelector('.__anno_marker__');
+    if (marker) marker.title = note;
+    destroyEditor(host);
+    activeEditor = null;
+  });
+
+  cancelBtn.addEventListener('click', () => {
+    destroyEditor(host);
+    activeEditor = null;
+  });
+
+  deleteBtn.addEventListener('click', () => {
+    removeAnnotation(entry.id);
+    unwrapElement(wrapper);
+    destroyEditor(host);
+    activeEditor = null;
+  });
+
+  wrapper.after(host);
+  activeEditor = host;
+}
+
+function escapeHtml(str) {
+  const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+  return str.replace(/[&<>"']/g, c => map[c]);
+}
+
+// Re-render all markers for current page (used after import)
+function reRenderAllMarkers() {
+  const pageAnnotations = getPageAnnotations();
+  // Clear existing markers first
+  document.querySelectorAll('.__anno_wrapper__').forEach(w => unwrapElement(w));
+  document.querySelectorAll('.__anno_editor_host__').forEach(e => e.remove());
+
+  // For imported annotations, we can't restore exact DOM positions.
+  // Instead, try to find and mark matching text nodes.
+  pageAnnotations.forEach(entry => {
+    const found = findTextInDocument(entry.text);
+    if (found) {
+      const wrapper = wrapTextNode(found, entry.text);
+      markAsAnnotated(wrapper, entry);
+    }
+  });
+}
+
+function findTextInDocument(text) {
+  const walker = document.createTreeWalker(
+    document.body,
+    NodeFilter.SHOW_TEXT,
+    {
+      acceptNode: (node) =>
+        node.textContent.includes(text) && !isInsideAnnotation(node)
+          ? NodeFilter.FILTER_ACCEPT
+          : NodeFilter.FILTER_REJECT
+    }
+  );
+  const node = walker.nextNode();
+  if (!node) return null;
+
+  const idx = node.textContent.indexOf(text);
+  return { node, start: idx, end: idx + text.length };
+}
+
+function isInsideAnnotation(node) {
+  let p = node.parentElement;
+  while (p) {
+    if (p.classList.contains('__anno_wrapper__') || p.classList.contains('__anno_editor_host__')) {
+      return true;
+    }
+    p = p.parentElement;
+  }
+  return false;
+}
+
+function wrapTextNode(found, text) {
+  const range = document.createRange();
+  range.setStart(found.node, found.start);
+  range.setEnd(found.node, found.end);
+  const wrapper = document.createElement('span');
+  wrapper.className = '__anno_wrapper__';
+  range.surroundContents(wrapper);
+  return wrapper;
+}
