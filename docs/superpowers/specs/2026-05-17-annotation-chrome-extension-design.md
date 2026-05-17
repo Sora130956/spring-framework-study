@@ -92,7 +92,7 @@ interface AnnotationState {
 
 **Note format** (for study notes workflow):
 ```
-https://docs.spring.io/spring-framework/...
+【https://docs.spring.io/spring-framework/...】
 【selected paragraph text】
 【my note】
 【selected paragraph text 2】
