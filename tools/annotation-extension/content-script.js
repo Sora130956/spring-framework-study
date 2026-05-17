@@ -53,13 +53,14 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
 // Space key shortcut: press Space on selection → annotate
 document.addEventListener('keydown', (e) => {
-  if (e.code !== 'Space') return;
+  if (e.code !== 'Space' && e.key !== ' ') return;
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
   const sel = window.getSelection();
   if (!sel || sel.isCollapsed) return;
   e.preventDefault();
+  e.stopPropagation();
   handleAddAnnotation();
-});
+}, true);
 
 // ---- Annotation Editor ----
 
@@ -314,7 +315,7 @@ function openEditEditor(wrapper, entry) {
 
   deleteBtn.addEventListener('click', () => {
     removeAnnotation(entry.id);
-    wrapper.remove();
+    wrapper.replaceWith(document.createTextNode(entry.text));
     destroyEditor(host);
     activeEditor = null;
   });
