@@ -51,6 +51,16 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   return true; // keep channel open for async sendResponse
 });
 
+// Mouse side button shortcut: click side button on selection → annotate
+document.addEventListener('mouseup', (e) => {
+  if (e.button !== 3 && e.button !== 4) return; // side buttons only
+  const sel = window.getSelection();
+  if (!sel || sel.isCollapsed) return;
+  e.preventDefault();
+  e.stopPropagation();
+  handleAddAnnotation();
+});
+
 // ---- Annotation Editor ----
 
 let activeEditor = null; // track currently open editor to prevent duplicates
@@ -195,7 +205,7 @@ function markAsAnnotated(wrapper, entry) {
   wrapper.innerHTML = '';
   const marker = document.createElement('span');
   marker.className = '__anno_marker__';
-  marker.style.cssText = 'border-bottom: 2px dotted #c4a35a; cursor: pointer;';
+  marker.style.cssText = 'border-bottom: 2px dotted #9a9588; cursor: pointer;';
   marker.textContent = entry.text;
   marker.dataset.annoId = entry.id;
   marker.title = entry.annotation;
