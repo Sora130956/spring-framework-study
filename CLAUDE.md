@@ -30,21 +30,27 @@ docs/           — 设计规范 & 实现计划
 5. `## 句子解析` — 2-3 个难句的翻译 + 语法/句式分析
 6. `## 术语表` — `| 英文 | 词性 | 释义 |`
 
+## Web Fetching — CRITICAL
+
+When fetching Spring documentation pages, **ALWAYS use Bing MCP** (user has configured it). Never use the built-in WebFetch tool for this purpose.
+
 ## Workflow — CRITICAL
 
 When user sends a Spring doc URL + copied paragraphs + brief Chinese notes:
 
 **MUST DO:**
 1. Determine which module + chapter the content belongs to
-2. Read `templates/note-template.md` for the note structure
-3. Format the raw notes into a structured note following the template exactly
-4. **Write the note to the corresponding `.md` file** in the correct module subdirectory (e.g., `core/01-ioc-container/container-overview.md`)
-5. Commit the new note file
+2. If the user only sends a URL (no copied content), use BING MCP to fetch the page, then proceed
+3. Read `templates/note-template.md` for the note structure
+4. Format the raw notes into a structured note following the template exactly
+5. **Write the note to the corresponding `.md` file** in the correct module subdirectory (e.g., `core/01-ioc-container/container-overview.md`)
+6. Commit the new note file
 
 **MUST NOT DO:**
 - **NEVER** output the formatted note to the conversation dialog as the only output — it MUST be saved as a `.md` file
 - **NEVER** save intermediate web-fetch results as separate files — only the final structured note gets saved
 - **NEVER** create extra files beyond the single `.md` note file per chapter/section
+- **NEVER** use the built-in WebFetch tool — always use Bing MCP for fetching web pages
 
 The final response to user should be a brief confirmation showing the file path and a short summary, not the full note content.
 
