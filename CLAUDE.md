@@ -40,9 +40,24 @@ docs/           — 设计规范 & 实现计划
 
 When fetching Spring documentation pages, **ALWAYS use Bing MCP** (user has configured it). Never use the built-in WebFetch tool for this purpose.
 
+## Input Format
+
+用户使用以下格式发送原始笔记：
+
+```
+【Spring 文档链接】
+【原文段落1】
+【对原文1的关注点、我的理解/备注】
+【原文段落2】
+【对原文2的关注点、我的理解/备注】
+...
+```
+
+每个 `【】` 块是一个独立单元。原文和附带的理解是成对的：一个原文段落后面紧跟着对这个段落的关注点和理解。Claude 解析时按这个配对关系来组织笔记的"关键点"部分。
+
 ## Workflow — CRITICAL
 
-When user sends a Spring doc URL + copied paragraphs + brief Chinese notes:
+When user sends raw notes in the format above:
 
 **MUST DO:**
 1. Determine which module + chapter the content belongs to
