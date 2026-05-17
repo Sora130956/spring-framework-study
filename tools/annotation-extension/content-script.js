@@ -98,42 +98,46 @@ function createEditorElement(text, wrapper) {
     <style>
       .anno-editor {
         display: inline-block;
-        background: #fff;
-        border: 1px solid #ccc;
-        border-radius: 6px;
+        background: #171717;
+        border: 1px solid #2a2a2a;
+        border-radius: 4px;
         padding: 8px;
         margin: 4px 0;
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        font-size: 13px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+        font-size: 12px;
+        color: #c9c7c2;
         max-width: 480px;
       }
       .anno-editor textarea {
         width: 100%;
-        min-height: 60px;
-        border: 1px solid #e0e0e0;
-        border-radius: 4px;
-        padding: 6px;
+        min-height: 56px;
+        border: 1px solid #2a2a2a;
+        border-radius: 3px;
+        padding: 6px 8px;
         font: inherit;
+        color: #c9c7c2;
+        background: #0d0d0d;
         resize: vertical;
         box-sizing: border-box;
+        outline: none;
       }
-      .anno-editor .btn-row {
-        display: flex;
-        gap: 6px;
-        margin-top: 6px;
-      }
+      .anno-editor textarea:focus { border-color: #444; }
+      .anno-editor textarea::placeholder { color: #555; }
+      .anno-editor .btn-row { display: flex; gap: 5px; margin-top: 6px; }
       .anno-editor button {
-        padding: 4px 12px;
-        border: 1px solid #d0d0d0;
-        border-radius: 4px;
-        background: #f5f5f5;
+        padding: 3px 10px;
+        border: 1px solid #333;
+        border-radius: 3px;
+        background: transparent;
+        color: #999;
         cursor: pointer;
         font: inherit;
-        font-size: 12px;
+        font-size: 11px;
+        transition: background 0.15s, border-color 0.15s, color 0.15s;
       }
-      .anno-editor button.save { background: #1a73e8; color: #fff; border-color: #1a73e8; }
-      .anno-editor button:hover { opacity: 0.85; }
+      .anno-editor button:hover { background: #222; border-color: #444; color: #c9c7c2; }
+      .anno-editor button.save { border-color: #c4a35a; color: #c4a35a; }
+      .anno-editor button.save:hover { background: rgba(196,163,90,0.1); }
     </style>
     <div class="anno-editor">
       <textarea placeholder="Write your annotation..."></textarea>
@@ -191,7 +195,7 @@ function markAsAnnotated(wrapper, entry) {
   wrapper.innerHTML = '';
   const marker = document.createElement('span');
   marker.className = '__anno_marker__';
-  marker.style.cssText = 'border-bottom: 2px dotted #888; cursor: pointer;';
+  marker.style.cssText = 'border-bottom: 2px dotted #c4a35a; cursor: pointer;';
   marker.textContent = entry.text;
   marker.dataset.annoId = entry.id;
   marker.title = entry.annotation;
@@ -224,43 +228,48 @@ function openEditEditor(wrapper, entry) {
     <style>
       .anno-editor {
         display: inline-block;
-        background: #fff;
-        border: 1px solid #ccc;
-        border-radius: 6px;
+        background: #171717;
+        border: 1px solid #2a2a2a;
+        border-radius: 4px;
         padding: 8px;
         margin: 4px 0;
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        font-size: 13px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+        font-size: 12px;
+        color: #c9c7c2;
         max-width: 480px;
       }
       .anno-editor textarea {
         width: 100%;
-        min-height: 60px;
-        border: 1px solid #e0e0e0;
-        border-radius: 4px;
-        padding: 6px;
+        min-height: 56px;
+        border: 1px solid #2a2a2a;
+        border-radius: 3px;
+        padding: 6px 8px;
         font: inherit;
+        color: #c9c7c2;
+        background: #0d0d0d;
         resize: vertical;
         box-sizing: border-box;
+        outline: none;
       }
-      .anno-editor .btn-row {
-        display: flex;
-        gap: 6px;
-        margin-top: 6px;
-      }
+      .anno-editor textarea:focus { border-color: #444; }
+      .anno-editor textarea::placeholder { color: #555; }
+      .anno-editor .btn-row { display: flex; gap: 5px; margin-top: 6px; }
       .anno-editor button {
-        padding: 4px 12px;
-        border: 1px solid #d0d0d0;
-        border-radius: 4px;
-        background: #f5f5f5;
+        padding: 3px 10px;
+        border: 1px solid #333;
+        border-radius: 3px;
+        background: transparent;
+        color: #999;
         cursor: pointer;
         font: inherit;
-        font-size: 12px;
+        font-size: 11px;
+        transition: background 0.15s, border-color 0.15s, color 0.15s;
       }
-      .anno-editor button.save { background: #1a73e8; color: #fff; border-color: #1a73e8; }
-      .anno-editor button.delete { background: #d93025; color: #fff; border-color: #d93025; }
-      .anno-editor button:hover { opacity: 0.85; }
+      .anno-editor button:hover { background: #222; border-color: #444; color: #c9c7c2; }
+      .anno-editor button.save { border-color: #c4a35a; color: #c4a35a; }
+      .anno-editor button.save:hover { background: rgba(196,163,90,0.1); }
+      .anno-editor button.delete { border-color: #c94a4a; color: #c94a4a; }
+      .anno-editor button.delete:hover { background: rgba(201,74,74,0.1); }
     </style>
     <div class="anno-editor">
       <textarea placeholder="Write your annotation...">${escapeHtml(entry.annotation)}</textarea>
