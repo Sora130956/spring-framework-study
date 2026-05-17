@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "Page Annotation Tool",
+  "version": "1.0.0",
+  "description": "Select text on any page, add annotations inline, and export in note format.",
+  "permissions": ["contextMenus", "activeTab"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content-script.js"],
+      "css": ["content-script.css"]
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  }
+}
