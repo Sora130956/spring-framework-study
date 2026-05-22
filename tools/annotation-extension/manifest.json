@@ -3,7 +3,7 @@
   "name": "Page Annotation Tool",
   "version": "1.0.0",
   "description": "Select text on any page, add annotations inline, and export in note format.",
-  "permissions": ["contextMenus", "activeTab"],
+  "permissions": ["contextMenus", "activeTab", "storage"],
   "background": {
     "service_worker": "background.js"
   },

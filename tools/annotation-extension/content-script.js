@@ -1,9 +1,25 @@
 // State: flat array of all annotations across all pages
 let annotations = [];
 
+// Load persisted annotations from chrome.storage on init
+(async function initStorage() {
+  try {
+    const result = await chrome.storage.local.get('anno_state');
+    if (result.anno_state && Array.isArray(result.anno_state)) {
+      annotations = result.anno_state;
+      reRenderAllMarkers();
+    }
+  } catch (_) { /* storage unavailable */ }
+})();
+
+function persistState() {
+  chrome.storage.local.set({ anno_state: annotations }).catch(function() {});
+}
+
 // Load state from import (called by popup)
 function loadState(imported) {
   annotations = imported;
+  persistState();
   reRenderAllMarkers();
 }
 
@@ -23,12 +39,14 @@ function addAnnotation(text, note) {
     timestamp: Date.now()
   };
   annotations.push(entry);
+  persistState();
   return entry;
 }
 
 // Remove an annotation by id
 function removeAnnotation(id) {
   annotations = annotations.filter(a => a.id !== id);
+  persistState();
 }
 
 // Listen for messages from background and popup
@@ -40,7 +58,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     case 'GET_STATE':
       sendResponse({
         annotations: annotations,
-        pageCount: getPageAnnotations().length
+        pageCount: getPageAnnotations().length,
+        title: document.title
       });
       break;
     case 'LOAD_STATE':
@@ -306,6 +325,7 @@ function openEditEditor(wrapper, entry) {
     const note = textarea.value.trim();
     if (!note) return;
     entry.annotation = note;
+    persistState();
     // Update marker display
     const marker = wrapper.querySelector('.__anno_marker__');
     if (marker) marker.title = note;
