@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Focus Reader — Settings</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #f9fafb;
+      color: #333;
+    }
+    .app { max-width: 480px; margin: 0 auto; padding: 32px 20px; }
+    header { margin-bottom: 24px; }
+    header h1 { font-size: 20px; }
+    header a { color: #4caf50; text-decoration: none; font-size: 13px; }
+    .section {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .section h3 { font-size: 14px; margin-bottom: 12px; color: #666; }
+    .field { margin-bottom: 12px; }
+    .field label { display: block; font-size: 13px; margin-bottom: 4px; font-weight: 600; }
+    .field select, .field input {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    .hint { font-size: 11px; color: #999; margin-top: 4px; }
+    .save-btn {
+      width: 100%;
+      padding: 12px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      background: #4caf50;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .save-btn:hover { background: #43a047; }
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #333;
+      color: #fff;
+      padding: 8px 24px;
+      border-radius: 20px;
+      font-size: 13px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>&#x2699; Settings</h1>
+      <a href="#" id="back-link">&larr; Back to Dashboard</a>
+    </header>
+
+    <div class="section">
+      <h3>Reading Speed</h3>
+      <div class="field">
+        <label for="wpm-preset">WPM Preset</label>
+        <select id="wpm-preset">
+          <option value="150">Slow (150 WPM) — New to English technical reading</option>
+          <option value="200">Normal (200 WPM) — Comfortable pace</option>
+          <option value="250">Fast (250 WPM) — Experienced reader</option>
+          <option value="300">Skim (300 WPM) — Scanning / review</option>
+        </select>
+        <p class="hint">Estimated reading time = page word count / WPM. Higher WPM = less time given per page.</p>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Daily Goal</h3>
+      <div class="field">
+        <label for="daily-goal">Daily focus target (minutes)</label>
+        <input type="number" id="daily-goal" min="10" max="480" step="5">
+        <p class="hint">Must reach this target for the day to count toward your streak. Recommended: 30–120 min.</p>
+      </div>
+    </div>
+
+    <button id="save-btn" class="save-btn">Save Settings</button>
+  </div>
+
+  <div id="toast" class="toast">Settings saved</div>
+
+  <script src="settings.js"></script>
+</body>
+</html>

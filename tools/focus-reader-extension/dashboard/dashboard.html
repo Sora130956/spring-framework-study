@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Focus Reader — Stats</title>
+  <link rel="stylesheet" href="dashboard.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>&#x1F4CA; Focus Stats</h1>
+      <a href="#" id="open-settings" class="settings-link">&#x2699; Settings</a>
+    </header>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Today</div>
+        <div id="stat-today" class="stat-value">-- min</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Streak</div>
+        <div id="stat-streak" class="stat-value">--</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Total Words</div>
+        <div id="stat-total-words" class="stat-value">--</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Daily Goal</div>
+        <div id="stat-goal" class="stat-value">-- / -- min</div>
+        <div class="goal-bar-bg"><div id="goal-bar-fill" class="goal-bar-fill"></div></div>
+      </div>
+    </div>
+
+    <div class="charts-row">
+      <div class="chart-container">
+        <h3>Weekly Focus (minutes)</h3>
+        <canvas id="weekly-chart"></canvas>
+      </div>
+      <div class="chart-container">
+        <h3>Reading Speed Trend (WPM)</h3>
+        <canvas id="speed-chart"></canvas>
+      </div>
+    </div>
+
+    <div class="sessions-section">
+      <h3>Recent Sessions</h3>
+      <div id="sessions-list"></div>
+    </div>
+
+    <div class="export-section">
+      <button id="export-btn">Export JSON</button>
+      <button id="import-btn">Import JSON</button>
+      <input type="file" id="import-file" accept=".json" style="display:none;">
+    </div>
+  </div>
+
+  <script src="dashboard.js"></script>
+</body>
+</html>
