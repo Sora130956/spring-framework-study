@@ -57,6 +57,8 @@ When fetching Spring documentation pages, **ALWAYS use Bing MCP** (user has conf
 
 ## Workflow — CRITICAL
 
+**核心铁律（最高优先级）：收到的笔记内容，必须写入项目目录下的 `.md` 文件中，绝对不允许只在对话框里输出完事。每次处理必须以文件落盘 + git commit 结束。**
+
 When user sends raw notes in the format above:
 
 **MUST DO:**
@@ -64,11 +66,11 @@ When user sends raw notes in the format above:
 2. If the user only sends a URL (no copied content), use BING MCP to fetch the page, then proceed
 3. Read `templates/note-template.md` for the note structure
 4. Format the raw notes into a structured note following the template exactly
-5. **Write the note to the corresponding `.md` file** in the correct module subdirectory (e.g., `core/01-ioc-container/container-overview.md`)
-6. Commit the new note file
+5. **使用 Write 工具将笔记保存为 `.md` 文件**，放入正确的模块子目录（如 `core/01-ioc-container/xxx.md`）
+6. **使用 git 提交该笔记文件**
 
-**MUST NOT DO:**
-- **NEVER** output the formatted note to the conversation dialog as the only output — it MUST be saved as a `.md` file
+**MUST NOT DO — 每次处理前默念一遍：**
+- **#1 禁止事项：在对话框中输出完整笔记内容而不写入文件。** 每次处理必须以 Write 工具调用结束，笔记的内容必须落盘为 `.md` 文件。绝对不允许 "先在对话框里给你看看" 就把笔记内容全发出来、而跳过写文件。如果后续需要给用户看，用户可以自己打开文件看。
 - **NEVER** save intermediate web-fetch results as separate files — only the final structured note gets saved
 - **NEVER** create extra files beyond the single `.md` note file per chapter/section
 - **NEVER** use the built-in WebFetch tool — always use Bing MCP for fetching web pages
