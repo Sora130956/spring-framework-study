@@ -2,7 +2,8 @@
   'use strict';
 
   const wpmSelect = document.getElementById('wpm-preset');
-  const dailyGoalInput = document.getElementById('daily-goal');
+  const weekdayGoalInput = document.getElementById('weekday-goal');
+  const weekendGoalInput = document.getElementById('weekend-goal');
   const saveBtn = document.getElementById('save-btn');
   const toast = document.getElementById('toast');
   const backLink = document.getElementById('back-link');
@@ -11,7 +12,8 @@
   chrome.runtime.sendMessage({ type: 'GET_SETTINGS' }, (settings) => {
     if (settings) {
       wpmSelect.value = settings.wpmPreset || 200;
-      dailyGoalInput.value = settings.dailyGoalMinutes || 90;
+      weekdayGoalInput.value = settings.dailyGoalWeekdayMinutes || 120;
+      weekendGoalInput.value = settings.dailyGoalWeekendMinutes || 360;
     }
   });
 
@@ -19,7 +21,8 @@
   saveBtn.addEventListener('click', async () => {
     const newSettings = {
       wpmPreset: parseInt(wpmSelect.value),
-      dailyGoalMinutes: parseInt(dailyGoalInput.value)
+      dailyGoalWeekdayMinutes: parseInt(weekdayGoalInput.value),
+      dailyGoalWeekendMinutes: parseInt(weekendGoalInput.value)
     };
     await chrome.runtime.sendMessage({ type: 'SAVE_SETTINGS', payload: newSettings });
 

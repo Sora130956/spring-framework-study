@@ -133,7 +133,7 @@ async function getFullState() {
     remainingSeconds: getRemainingSeconds(),
     todayMinutes: todayMin,
     streakDays: settings.streakDays,
-    dailyGoalMinutes: settings.dailyGoalMinutes
+    dailyGoalMinutes: getEffectiveDailyGoal(settings)
   };
 }
 
@@ -149,10 +149,18 @@ async function getTodayTotal() {
 // ---- Settings ----
 const DEFAULT_SETTINGS = {
   wpmPreset: 200,
-  dailyGoalMinutes: 90,
+  dailyGoalWeekdayMinutes: 120,
+  dailyGoalWeekendMinutes: 360,
   streakDays: 0,
   lastCompletedDate: ''
 };
+
+function getEffectiveDailyGoal(settings) {
+  const day = new Date().getDay(); // 0=Sun, 6=Sat
+  return day === 0 || day === 6
+    ? settings.dailyGoalWeekendMinutes
+    : settings.dailyGoalWeekdayMinutes;
+}
 
 async function getSettings() {
   const data = await chrome.storage.local.get({ settings: DEFAULT_SETTINGS });
@@ -175,7 +183,7 @@ async function updateStreak() {
 
   const todayMin = await getTodayTotal();
 
-  if (todayMin >= settings.dailyGoalMinutes) {
+  if (todayMin >= getEffectiveDailyGoal(settings)) {
     const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
     if (settings.lastCompletedDate === yesterday) {
       settings.streakDays += 1;
@@ -265,9 +273,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           sendResponse({ success: true });
           break;
 
-        case 'GET_SETTINGS':
-          sendResponse(await getSettings());
+        case 'GET_SETTINGS': {
+          const s = await getSettings();
+          sendResponse({ ...s, dailyGoalMinutes: getEffectiveDailyGoal(s) });
           break;
+        }
 
         case 'SAVE_SETTINGS':
           sendResponse(await saveSettings(message.payload));
