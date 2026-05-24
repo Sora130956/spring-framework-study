@@ -1,0 +1,38 @@
+[
+  {
+    "id": 1,
+    "priority": 1,
+    "action": { "type": "redirect", "redirect": { "extensionPath": "/blocked/blocked.html" } },
+    "condition": {
+      "urlFilter": "*",
+      "resourceTypes": ["main_frame"]
+    }
+  },
+  {
+    "id": 100,
+    "priority": 100,
+    "action": { "type": "allow" },
+    "condition": {
+      "urlFilter": "*://*.spring.io/*",
+      "resourceTypes": ["main_frame"]
+    }
+  },
+  {
+    "id": 101,
+    "priority": 100,
+    "action": { "type": "allow" },
+    "condition": {
+      "urlFilter": "*://chat.deepseek.com/*",
+      "resourceTypes": ["main_frame"]
+    }
+  },
+  {
+    "id": 102,
+    "priority": 100,
+    "action": { "type": "allow" },
+    "condition": {
+      "urlFilter": "*://*.spring.io",
+      "resourceTypes": ["main_frame"]
+    }
+  }
+]
