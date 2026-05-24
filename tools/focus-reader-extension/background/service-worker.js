@@ -16,15 +16,6 @@ chrome.runtime.onInstalled.addListener(() => {
   chrome.storage.session.set({ state: STATE_IDLE });
 });
 
-chrome.runtime.onStartup.addListener(async () => {
-  const data = await chrome.storage.session.get(['state']);
-  currentState = data.state || STATE_IDLE;
-  if (currentState === STATE_RUNNING) {
-    // Session was active when browser closed → abort it
-    await resetToIdle();
-  }
-});
-
 // ---- Time formatting ----
 function formatTime(totalSeconds) {
   const m = Math.floor(totalSeconds / 60);
@@ -179,12 +170,15 @@ async function saveSettings(newSettings) {
 async function updateStreak() {
   const settings = await getSettings();
   const today = new Date().toISOString().slice(0, 10);
+
+  if (settings.lastCompletedDate === today) return; // already counted today
+
   const todayMin = await getTodayTotal();
 
   if (todayMin >= settings.dailyGoalMinutes) {
     const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
-    if (settings.lastCompletedDate === yesterday || settings.lastCompletedDate === today) {
-      settings.streakDays += settings.lastCompletedDate === today ? 0 : 1;
+    if (settings.lastCompletedDate === yesterday) {
+      settings.streakDays += 1;
     } else {
       settings.streakDays = 1;
     }
@@ -195,12 +189,16 @@ async function updateStreak() {
 
 // ---- Broadcast state to content scripts ----
 async function broadcastState() {
-  const fullState = await getFullState();
-  const tabs = await chrome.tabs.query({});
-  for (const tab of tabs) {
-    if (tab.id && tab.url && (tab.url.includes('spring.io') || tab.url.includes('deepseek.com'))) {
-      chrome.tabs.sendMessage(tab.id, { type: 'STATE_UPDATE', payload: fullState }).catch(() => {});
+  try {
+    const fullState = await getFullState();
+    const tabs = await chrome.tabs.query({});
+    for (const tab of tabs) {
+      if (tab.id && tab.url && (tab.url.includes('spring.io') || tab.url.includes('deepseek.com'))) {
+        chrome.tabs.sendMessage(tab.id, { type: 'STATE_UPDATE', payload: fullState }).catch(() => {});
+      }
     }
+  } catch (err) {
+    console.error('Focus Reader: broadcastState failed', err);
   }
 }
 
@@ -224,72 +222,89 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 // ---- Message handler ----
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   (async () => {
-    switch (message.type) {
-      case 'GET_STATE':
-        sendResponse(await getFullState());
-        break;
+    try {
+      switch (message.type) {
+        case 'GET_STATE':
+          sendResponse(await getFullState());
+          break;
 
-      case 'ANALYZE_PAGE': {
-        const wordCount = countWords(message.text);
-        const settings = await getSettings();
-        const durationSeconds = Math.ceil((wordCount / settings.wpmPreset) * 60);
-        sendResponse({ wordCount, durationSeconds, wpm: settings.wpmPreset });
-        break;
-      }
-
-      case 'START_SESSION':
-        await startSession(message.payload);
-        sendResponse({ success: true });
-        break;
-
-      case 'COMPLETE_SESSION': {
-        const record = await completeSession();
-        await updateStreak();
-        sendResponse({ success: true, record });
-        break;
-      }
-
-      case 'ABORT_SESSION':
-        await abortSession();
-        sendResponse({ success: true });
-        break;
-
-      case 'GET_SETTINGS':
-        sendResponse(await getSettings());
-        break;
-
-      case 'SAVE_SETTINGS':
-        sendResponse(await saveSettings(message.payload));
-        break;
-
-      case 'GET_SESSIONS': {
-        const { sessions } = await chrome.storage.local.get({ sessions: [] });
-        sendResponse(sessions);
-        break;
-      }
-
-      case 'EXPORT_DATA': {
-        const data = await chrome.storage.local.get(null);
-        sendResponse(data);
-        break;
-      }
-
-      case 'IMPORT_DATA': {
-        const imported = message.payload;
-        const existing = await chrome.storage.local.get({ sessions: [] });
-        const existingIds = new Set(existing.sessions.map(s => s.id));
-        const newSessions = imported.sessions.filter(s => !existingIds.has(s.id));
-        const merged = [...existing.sessions, ...newSessions];
-        await chrome.storage.local.set({ sessions: merged });
-        if (imported.settings) {
-          await chrome.storage.local.set({ settings: imported.settings });
+        case 'ANALYZE_PAGE': {
+          const wordCount = countWords(message.text);
+          const settings = await getSettings();
+          const durationSeconds = Math.ceil((wordCount / settings.wpmPreset) * 60);
+          sendResponse({ wordCount, durationSeconds, wpm: settings.wpmPreset });
+          break;
         }
-        sendResponse({ imported: newSessions.length });
-        break;
-      }
 
-      default:
-        sendResponse({ error: 'Unknown message type' });
+        case 'START_SESSION':
+          if (currentState !== STATE_IDLE) {
+            sendResponse({ success: false, error: 'Session already in progress' });
+            break;
+          }
+          await startSession(message.payload);
+          sendResponse({ success: true });
+          break;
+
+        case 'COMPLETE_SESSION': {
+          if (currentState !== STATE_RUNNING) {
+            sendResponse({ success: false, error: 'No active session' });
+            break;
+          }
+          const record = await completeSession();
+          await updateStreak();
+          sendResponse({ success: true, record });
+          break;
+        }
+
+        case 'ABORT_SESSION':
+          if (currentState !== STATE_RUNNING) {
+            sendResponse({ success: false, error: 'No active session' });
+            break;
+          }
+          await abortSession();
+          sendResponse({ success: true });
+          break;
+
+        case 'GET_SETTINGS':
+          sendResponse(await getSettings());
+          break;
+
+        case 'SAVE_SETTINGS':
+          sendResponse(await saveSettings(message.payload));
+          break;
+
+        case 'GET_SESSIONS': {
+          const { sessions } = await chrome.storage.local.get({ sessions: [] });
+          sendResponse(sessions);
+          break;
+        }
+
+        case 'EXPORT_DATA': {
+          const data = await chrome.storage.local.get(null);
+          sendResponse(data);
+          break;
+        }
+
+        case 'IMPORT_DATA': {
+          const imported = message.payload;
+          const existing = await chrome.storage.local.get({ sessions: [] });
+          const existingIds = new Set(existing.sessions.map(s => s.id));
+          const newSessions = imported.sessions.filter(s => !existingIds.has(s.id));
+          const merged = [...existing.sessions, ...newSessions];
+          await chrome.storage.local.set({ sessions: merged });
+          if (imported.settings) {
+            await chrome.storage.local.set({ settings: imported.settings });
+          }
+          sendResponse({ imported: newSessions.length });
+          break;
+        }
+
+        default:
+          sendResponse({ error: 'Unknown message type' });
+      }
+    } catch (err) {
+      console.error('Focus Reader: message handler error', err);
+      sendResponse({ success: false, error: err.message });
     }
   })();
   return true; // async response
