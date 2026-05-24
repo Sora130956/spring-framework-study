@@ -48,7 +48,6 @@
     if (isSpringPage) {
       pageDetails.classList.remove('hidden');
       notSpringMsg.classList.add('hidden');
-      startBtn.disabled = false;
       pageTitle.textContent = tab.title || '';
       pageUrl.textContent = new URL(tab.url).hostname;
 
@@ -58,9 +57,28 @@
         pageWordCount = response.wordCount;
         wordCount.textContent = pageWordCount.toLocaleString();
         updateEstimate();
+        startBtn.disabled = pageWordCount === 0;
       } catch (e) {
-        wordCount.textContent = '--';
-        estTime.textContent = '--';
+        // Content script not loaded — try injecting it
+        try {
+          await chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            files: ['content/content-script.js']
+          });
+          await chrome.scripting.insertCSS({
+            target: { tabId: tab.id },
+            files: ['content/progress-bar.css']
+          });
+          const response = await chrome.tabs.sendMessage(tab.id, { type: 'GET_PAGE_TEXT' });
+          pageWordCount = response.wordCount;
+          wordCount.textContent = pageWordCount.toLocaleString();
+          updateEstimate();
+          startBtn.disabled = pageWordCount === 0;
+        } catch (err) {
+          wordCount.textContent = '--';
+          estTime.textContent = '--';
+          startBtn.disabled = true;
+        }
       }
     } else {
       pageDetails.classList.add('hidden');

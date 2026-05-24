@@ -249,6 +249,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             sendResponse({ success: false, error: 'Session already in progress' });
             break;
           }
+          if (!message.payload.durationSeconds || message.payload.durationSeconds <= 0) {
+            sendResponse({ success: false, error: 'Invalid session duration' });
+            break;
+          }
           await startSession(message.payload);
           sendResponse({ success: true });
           break;
