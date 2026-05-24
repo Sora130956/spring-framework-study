@@ -11,10 +11,36 @@ let sessionWordCount = 0;
 let sessionWpm = 200;
 let alarmName = 'focusReaderTick';
 
-// ---- Init: restore state from session storage ----
-chrome.runtime.onInstalled.addListener(() => {
-  chrome.storage.session.set({ state: STATE_IDLE });
-});
+// ---- Init: restore state from session storage (handles both fresh install and SW restart) ----
+const initPromise = (async function () {
+  const stored = await chrome.storage.session.get([
+    'state', 'sessionStartTime', 'sessionDurationSeconds',
+    'sessionUrl', 'sessionTitle', 'sessionWordCount', 'sessionWpm'
+  ]);
+
+  if (stored.state === STATE_RUNNING) {
+    // SW was terminated while session was running — restore
+    sessionStartTime = stored.sessionStartTime;
+    sessionDurationSeconds = stored.sessionDurationSeconds;
+    sessionUrl = stored.sessionUrl || '';
+    sessionTitle = stored.sessionTitle || '';
+    sessionWordCount = stored.sessionWordCount || 0;
+    sessionWpm = stored.sessionWpm || 200;
+    currentState = STATE_RUNNING;
+
+    await enableBlocking();
+
+    const remaining = getRemainingSeconds();
+    if (remaining > 0) {
+      chrome.alarms.create(alarmName, { delayInMinutes: (remaining / 60) + 0.05 });
+    } else {
+      await abortSession();
+    }
+  } else if (!stored.state) {
+    // First run — set initial state
+    await chrome.storage.session.set({ state: STATE_IDLE });
+  }
+})();
 
 // ---- Time formatting ----
 function formatTime(totalSeconds) {
@@ -212,6 +238,7 @@ async function broadcastState() {
 
 // ---- Alarms (timeout protection) ----
 chrome.alarms.onAlarm.addListener(async (alarm) => {
+  await initPromise;
   if (alarm.name === alarmName && currentState === STATE_RUNNING) {
     if (getRemainingSeconds() <= 0) {
       // Time's up — abort
@@ -231,6 +258,7 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   (async () => {
     try {
+      await initPromise;
       switch (message.type) {
         case 'GET_STATE':
           sendResponse(await getFullState());
