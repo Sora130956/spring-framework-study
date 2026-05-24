@@ -2,6 +2,8 @@
 const STATE_IDLE = 'IDLE';
 const STATE_RUNNING = 'RUNNING';
 
+const MAX_SEGMENT_SECONDS = 2700; // 45 minutes per segment
+
 let currentState = STATE_IDLE;
 let sessionStartTime = null;
 let sessionDurationSeconds = 0;
@@ -9,13 +11,19 @@ let sessionUrl = '';
 let sessionTitle = '';
 let sessionWordCount = 0;
 let sessionWpm = 200;
+let sessionTotalDurationSeconds = 0;
+let sessionTotalSegments = 1;
+let sessionCurrentSegment = 1;
+let sessionSegmentAccumulatedSeconds = 0;
 let alarmName = 'focusReaderTick';
 
 // ---- Init: restore state from session storage (handles both fresh install and SW restart) ----
 const initPromise = (async function () {
   const stored = await chrome.storage.session.get([
     'state', 'sessionStartTime', 'sessionDurationSeconds',
-    'sessionUrl', 'sessionTitle', 'sessionWordCount', 'sessionWpm'
+    'sessionUrl', 'sessionTitle', 'sessionWordCount', 'sessionWpm',
+    'sessionTotalDurationSeconds', 'sessionTotalSegments',
+    'sessionCurrentSegment', 'sessionSegmentAccumulatedSeconds'
   ]);
 
   if (stored.state === STATE_RUNNING) {
@@ -26,6 +34,10 @@ const initPromise = (async function () {
     sessionTitle = stored.sessionTitle || '';
     sessionWordCount = stored.sessionWordCount || 0;
     sessionWpm = stored.sessionWpm || 200;
+    sessionTotalDurationSeconds = stored.sessionTotalDurationSeconds || 0;
+    sessionTotalSegments = stored.sessionTotalSegments || 1;
+    sessionCurrentSegment = stored.sessionCurrentSegment || 1;
+    sessionSegmentAccumulatedSeconds = stored.sessionSegmentAccumulatedSeconds || 0;
     currentState = STATE_RUNNING;
 
     await enableBlocking();
@@ -65,11 +77,18 @@ async function disableBlocking() {
 // ---- Start session ----
 async function startSession({ url, title, wordCount, durationSeconds, wpm }) {
   sessionStartTime = Date.now();
-  sessionDurationSeconds = durationSeconds;
   sessionUrl = url;
   sessionTitle = title;
   sessionWordCount = wordCount;
   sessionWpm = wpm;
+  sessionTotalDurationSeconds = durationSeconds;
+  sessionTotalSegments = Math.ceil(durationSeconds / MAX_SEGMENT_SECONDS);
+  sessionCurrentSegment = 1;
+  sessionSegmentAccumulatedSeconds = 0;
+
+  // Current segment duration capped at 45 min
+  sessionDurationSeconds = Math.min(durationSeconds, MAX_SEGMENT_SECONDS);
+
   currentState = STATE_RUNNING;
 
   await chrome.storage.session.set({
@@ -79,30 +98,34 @@ async function startSession({ url, title, wordCount, durationSeconds, wpm }) {
     sessionUrl,
     sessionTitle,
     sessionWordCount,
-    sessionWpm
+    sessionWpm,
+    sessionTotalDurationSeconds,
+    sessionTotalSegments,
+    sessionCurrentSegment,
+    sessionSegmentAccumulatedSeconds
   });
 
   await enableBlocking();
 
-  // Set alarm for timeout enforcement
-  chrome.alarms.create(alarmName, { delayInMinutes: (durationSeconds / 60) + 0.05 });
+  chrome.alarms.create(alarmName, { delayInMinutes: (sessionDurationSeconds / 60) + 0.05 });
 
-  // Broadcast state to all tabs
   broadcastState();
 }
 
 // ---- Complete session ----
 async function completeSession() {
-  const elapsedSeconds = Math.floor((Date.now() - sessionStartTime) / 1000);
+  const currentSegmentElapsed = Math.floor((Date.now() - sessionStartTime) / 1000);
+  // For segmented sessions, only record the final segment (earlier segments already saved)
+  // For single-segment sessions, this is the full elapsed time
+  const totalElapsed = sessionSegmentAccumulatedSeconds + currentSegmentElapsed;
 
-  // Persist session record
   const record = {
     id: `session_${new Date().toISOString().replace(/[-:T]/g, '').slice(0, 15)}`,
     url: sessionUrl,
-    title: sessionTitle,
+    title: sessionTitle + (sessionTotalSegments > 1 ? ` (Segment ${sessionCurrentSegment}/${sessionTotalSegments})` : ''),
     wordCount: sessionWordCount,
-    estimatedMinutes: Math.ceil(sessionDurationSeconds / 60),
-    actualSeconds: elapsedSeconds,
+    estimatedMinutes: Math.ceil(sessionTotalDurationSeconds / 60),
+    actualSeconds: currentSegmentElapsed,
     wpm: sessionWpm,
     completedAt: new Date().toISOString(),
     completed: true
@@ -130,6 +153,10 @@ async function resetToIdle() {
   sessionTitle = '';
   sessionWordCount = 0;
   sessionWpm = 200;
+  sessionTotalDurationSeconds = 0;
+  sessionTotalSegments = 1;
+  sessionCurrentSegment = 1;
+  sessionSegmentAccumulatedSeconds = 0;
   await chrome.storage.session.set({ state: STATE_IDLE });
   await disableBlocking();
   await chrome.alarms.clear(alarmName);
@@ -157,6 +184,9 @@ async function getFullState() {
     sessionDurationSeconds,
     sessionWpm,
     remainingSeconds: getRemainingSeconds(),
+    totalSegments: sessionTotalSegments,
+    currentSegment: sessionCurrentSegment,
+    segmentAccumulatedSeconds: sessionSegmentAccumulatedSeconds,
     todayMinutes: todayMin,
     streakDays: settings.streakDays,
     dailyGoalMinutes: getEffectiveDailyGoal(settings)
@@ -241,13 +271,17 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
   await initPromise;
   if (alarm.name === alarmName && currentState === STATE_RUNNING) {
     if (getRemainingSeconds() <= 0) {
-      // Time's up — abort
-      await abortSession();
-      // Notify content scripts
-      const tabs = await chrome.tabs.query({});
-      for (const tab of tabs) {
-        if (tab.id && tab.url && tab.url.includes('spring.io')) {
-          chrome.tabs.sendMessage(tab.id, { type: 'TIME_UP' }).catch(() => {});
+      if (sessionCurrentSegment < sessionTotalSegments) {
+        // Intermediate segment time's up — broadcast so content script shows "Complete Stage"
+        broadcastState();
+      } else {
+        // Final segment time's up — abort
+        await abortSession();
+        const tabs = await chrome.tabs.query({});
+        for (const tab of tabs) {
+          if (tab.id && tab.url && tab.url.includes('spring.io')) {
+            chrome.tabs.sendMessage(tab.id, { type: 'TIME_UP' }).catch(() => {});
+          }
         }
       }
     }
@@ -318,6 +352,66 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         case 'GET_SESSIONS': {
           const { sessions } = await chrome.storage.local.get({ sessions: [] });
           sendResponse(sessions);
+          break;
+        }
+
+        case 'COMPLETE_SEGMENT': {
+          if (currentState !== STATE_RUNNING) {
+            sendResponse({ success: false, error: 'No active session' });
+            break;
+          }
+          if (sessionCurrentSegment >= sessionTotalSegments) {
+            sendResponse({ success: false, error: 'Already on final segment' });
+            break;
+          }
+          // Record this segment's time
+          const segElapsed = Math.floor((Date.now() - sessionStartTime) / 1000);
+          const segRecord = {
+            id: `seg_${new Date().toISOString().replace(/[-:T]/g, '').slice(0, 15)}`,
+            url: sessionUrl,
+            title: `${sessionTitle} (Segment ${sessionCurrentSegment}/${sessionTotalSegments})`,
+            wordCount: sessionWordCount,
+            estimatedMinutes: Math.ceil(sessionDurationSeconds / 60),
+            actualSeconds: segElapsed,
+            wpm: sessionWpm,
+            completedAt: new Date().toISOString(),
+            completed: true
+          };
+          const { sessions } = await chrome.storage.local.get({ sessions: [] });
+          sessions.push(segRecord);
+          await chrome.storage.local.set({ sessions });
+
+          sessionSegmentAccumulatedSeconds += segElapsed;
+
+          // Advance to next segment
+          sessionCurrentSegment += 1;
+          const remainingTotal = sessionTotalDurationSeconds - sessionSegmentAccumulatedSeconds;
+          sessionDurationSeconds = Math.min(remainingTotal, MAX_SEGMENT_SECONDS);
+          sessionStartTime = Date.now();
+
+          await chrome.storage.session.set({
+            sessionDurationSeconds,
+            sessionStartTime,
+            sessionCurrentSegment,
+            sessionSegmentAccumulatedSeconds
+          });
+
+          await updateStreak();
+          broadcastState();
+          sendResponse({ success: true, nextSegment: sessionCurrentSegment });
+          break;
+        }
+
+        case 'CONTINUE_SESSION': {
+          if (currentState !== STATE_RUNNING) {
+            sendResponse({ success: false, error: 'No active session' });
+            break;
+          }
+          // Start the next segment timer
+          chrome.alarms.clear(alarmName);
+          chrome.alarms.create(alarmName, { delayInMinutes: (sessionDurationSeconds / 60) + 0.05 });
+          broadcastState();
+          sendResponse({ success: true, durationSeconds: sessionDurationSeconds });
           break;
         }
 

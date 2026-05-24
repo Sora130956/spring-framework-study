@@ -22,6 +22,7 @@
   const footerToday = document.getElementById('footer-today');
   const footerStreak = document.getElementById('footer-streak');
   const openDashboard = document.getElementById('open-dashboard');
+  const segmentIndicator = document.getElementById('segment-indicator');
 
   let pageWordCount = 0;
   let estimatedDuration = 0;
@@ -128,6 +129,7 @@
     chrome.runtime.sendMessage({ type: 'GET_STATE' }, (state) => {
       if (state && state.state === 'RUNNING') {
         runningTitle.textContent = state.sessionTitle || '';
+        updateSegmentIndicator(state);
         startRunningTimer(state.remainingSeconds, state.sessionDurationSeconds);
       }
     });
@@ -169,6 +171,15 @@
     const m = Math.floor(totalSeconds / 60);
     const s = totalSeconds % 60;
     return `${m}:${String(s).padStart(2, '0')}`;
+  }
+
+  function updateSegmentIndicator(state) {
+    if (state.totalSegments > 1) {
+      segmentIndicator.style.display = 'block';
+      segmentIndicator.textContent = 'Phase ' + state.currentSegment + ' / ' + state.totalSegments;
+    } else {
+      segmentIndicator.style.display = 'none';
+    }
   }
 
   // ---- Abandon ----
