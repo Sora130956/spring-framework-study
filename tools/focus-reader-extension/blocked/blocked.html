@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Focus Reader — Blocked</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: #f5f5f5;
+      color: #333;
+    }
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 48px;
+      text-align: center;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+      max-width: 400px;
+    }
+    .icon { font-size: 48px; margin-bottom: 16px; }
+    h1 { font-size: 20px; margin-bottom: 8px; }
+    p { color: #666; font-size: 14px; margin-bottom: 8px; line-height: 1.6; }
+    .info { color: #999; font-size: 12px; margin-bottom: 24px; }
+    button {
+      padding: 10px 32px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #fff;
+      background: #4caf50;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover { background: #43a047; }
+    button:disabled { background: #ccc; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">&#x1F6D1;</div>
+    <h1>Focused Reading in Progress</h1>
+    <p>This website is not on the whitelist. Only Spring documentation and chat.deepseek.com are accessible during a reading session.</p>
+    <p id="remaining" class="info"></p>
+    <button id="go-back">Return to Reading</button>
+  </div>
+  <script>
+    (async () => {
+      // Try to go back to the Spring doc tab
+      const tabs = await chrome.tabs.query({ url: ['*://*.spring.io/*', '*://chat.deepseek.com/*'] });
+      if (tabs.length > 0) {
+        document.getElementById('go-back').addEventListener('click', () => {
+          chrome.tabs.update(tabs[0].id, { active: true });
+        });
+        document.getElementById('remaining').textContent =
+          `There ${tabs.length === 1 ? 'is' : 'are'} ${tabs.length} allowed tab${tabs.length > 1 ? 's' : ''} open.`;
+      } else {
+        document.getElementById('go-back').disabled = true;
+        document.getElementById('go-back').textContent = 'No reading tab found';
+        document.getElementById('remaining').textContent = 'Open a Spring doc page to continue.';
+      }
+    })();
+  </script>
+</body>
+</html>
