@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Focus Reader</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      width: 300px;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      color: #333;
+      background: #fff;
+    }
+    .container { padding: 16px; }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .header .logo { font-size: 20px; }
+    .header h2 { font-size: 16px; font-weight: 700; }
+
+    /* Page info */
+    .page-info {
+      background: #f5f5f5;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+    .page-info .title {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .page-info .url {
+      font-size: 11px;
+      color: #999;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .stats-row {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 8px;
+      font-size: 12px;
+      color: #666;
+    }
+    .stats-row span { font-weight: 600; color: #333; }
+
+    /* WPM selector */
+    .wpm-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      font-size: 12px;
+    }
+    .wpm-row select {
+      padding: 4px 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+
+    /* Button */
+    .btn {
+      width: 100%;
+      padding: 12px;
+      font-size: 14px;
+      font-weight: 700;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      color: #fff;
+    }
+    .btn-primary { background: #4caf50; }
+    .btn-primary:hover { background: #43a047; }
+    .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
+    .btn-danger { background: #e53935; }
+    .btn-danger:hover { background: #c62828; }
+    .btn-secondary {
+      background: transparent;
+      color: #4caf50;
+      border: 1px solid #4caf50;
+      font-weight: 600;
+      font-size: 12px;
+      padding: 8px;
+    }
+
+    /* Footer */
+    .footer {
+      border-top: 1px solid #eee;
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: #999;
+    }
+    .footer .streak { color: #ff9800; font-weight: 600; }
+
+    /* Running view */
+    .timer-display {
+      text-align: center;
+      font-size: 36px;
+      font-weight: 700;
+      color: #4caf50;
+      margin: 8px 0;
+    }
+    .timer-display.danger { color: #f44336; }
+    .timer-display.warning { color: #ff9800; }
+    .progress-bar-bg {
+      width: 100%;
+      height: 6px;
+      background: #eee;
+      border-radius: 3px;
+      margin: 8px 0 16px;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      background: #4caf50;
+      transition: width 0.3s;
+    }
+    .progress-bar-fill.warning { background: #ff9800; }
+    .progress-bar-fill.danger { background: #f44336; }
+
+    .abandon-link {
+      display: block;
+      text-align: center;
+      font-size: 11px;
+      color: #ccc;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    .abandon-link:hover { color: #e53935; }
+
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <!-- IDLE View -->
+  <div id="idle-view" class="container">
+    <div class="header">
+      <span class="logo">&#x1F50D;</span>
+      <h2>Focus Reader</h2>
+    </div>
+
+    <div id="page-details" class="page-info hidden">
+      <div id="page-title" class="title"></div>
+      <div id="page-url" class="url"></div>
+      <div class="stats-row">
+        Words: <span id="word-count">--</span>
+        Est. time: <span id="est-time">--</span>
+      </div>
+    </div>
+
+    <div id="not-spring-msg" class="page-info hidden">
+      <p style="font-size:13px;color:#999;text-align:center;">Please open a Spring documentation page to start reading.</p>
+    </div>
+
+    <div class="wpm-row">
+      <label>Reading speed</label>
+      <select id="wpm-select">
+        <option value="150">Slow (150 WPM)</option>
+        <option value="200" selected>Normal (200 WPM)</option>
+        <option value="250">Fast (250 WPM)</option>
+        <option value="300">Skim (300 WPM)</option>
+      </select>
+    </div>
+
+    <button id="start-btn" class="btn btn-primary" disabled>Start Reading</button>
+  </div>
+
+  <!-- RUNNING View -->
+  <div id="running-view" class="container hidden">
+    <div class="header">
+      <span class="logo">&#x23F3;</span>
+      <h2>Reading in focus...</h2>
+    </div>
+    <div id="running-title" class="page-info" style="text-align:center;">
+      <div class="title"></div>
+    </div>
+    <div id="timer-display" class="timer-display">--:--</div>
+    <div class="progress-bar-bg">
+      <div id="progress-fill" class="progress-bar-fill" style="width:100%;"></div>
+    </div>
+    <p style="text-align:center;font-size:12px;color:#999;">Finish reading before time's up</p>
+    <span id="abandon-link" class="abandon-link">Abandon reading</span>
+  </div>
+
+  <!-- ABANDON Confirm -->
+  <div id="abandon-confirm" class="container hidden">
+    <p style="text-align:center;margin-bottom:12px;">Confirm abandon?</p>
+    <p style="text-align:center;font-size:12px;color:#e53935;margin-bottom:12px;">&#x274C; This session won't be counted.</p>
+    <button id="abandon-yes" class="btn btn-danger" style="margin-bottom:8px;">Yes, Abandon</button>
+    <button id="abandon-no" class="btn btn-secondary">Keep Reading</button>
+  </div>
+
+  <!-- Footer -->
+  <div id="footer-bar" class="footer">
+    <span id="footer-today">Today: -- min</span>
+    <span id="footer-streak" class="streak">--</span>
+    <a href="#" id="open-dashboard" style="color:#4caf50;text-decoration:none;">Full stats &rarr;</a>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
