@@ -109,6 +109,10 @@ async function resetToIdle() {
   currentState = STATE_IDLE;
   sessionStartTime = null;
   sessionDurationSeconds = 0;
+  sessionUrl = '';
+  sessionTitle = '';
+  sessionWordCount = 0;
+  sessionWpm = 200;
   await chrome.storage.session.set({ state: STATE_IDLE });
   await disableBlocking();
   await chrome.alarms.clear(alarmName);
