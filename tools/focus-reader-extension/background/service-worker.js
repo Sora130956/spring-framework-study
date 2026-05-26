@@ -2,7 +2,7 @@
 const STATE_IDLE = 'IDLE';
 const STATE_RUNNING = 'RUNNING';
 
-const MAX_SEGMENT_SECONDS = 2700; // 45 minutes per segment
+const MAX_SEGMENT_SECONDS = 1800; // 30 minutes per segment
 
 let currentState = STATE_IDLE;
 let sessionStartTime = null;
