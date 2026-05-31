@@ -59,6 +59,35 @@ When fetching Spring documentation pages, **ALWAYS use Bing MCP** (user has conf
 
 **核心铁律（最高优先级）：收到的笔记内容，必须写入项目目录下的 `.md` 文件中，绝对不允许只在对话框里输出完事。每次处理必须以文件落盘 + git commit 结束。**
 
+### Scoring-First Workflow (NEW — 笔记生成前先打分)
+
+When user sends a URL (with or without annotations), **ALWAYS score first, then generate notes**.
+
+**路径 A — 用户只发 URL：**
+1. Use BING MCP to fetch the page
+2. Score every major section using the `spring-doc-scorer` criteria（实用指数 + 面试指数）
+3. Output the scoring report in chat（按 section 顺序，每个标题一行）
+4. Wait for user to reply with their annotations/priorities before generating notes
+
+**路径 B — 用户发 URL + 标注【】块：**
+1. Use BING MCP to fetch the page
+2. Score every major section（先打分）
+3. Map user's 【】annotations to the scored sections
+4. Generate notes with **score-driven detail level**（见下方规则）
+5. Write + commit
+
+**笔记详略规则（按实用指数决定）：**
+
+| 实用指数 | 笔记深度 | 模板覆盖 |
+|---------|---------|---------|
+| >= 7 | **精读** — 完整展开 | 核心理解 + 关键点（原文引用+中文理解+代码）+ 句子解析 + 术语表 |
+| 4-6 | **可读** — 中等展开 | 核心理解 + 关键点（原文引用+中文理解），跳过句子解析 |
+| <= 3 | **略过** — 一句话概括 | 仅一段中文总结，不加原文引用和术语 |
+
+**重要：** 即使某个 section 用户给了标注，如果实用指数 <= 3，也只做一句话概括——不需要按完整模板展开。但如果面试指数 >= 7 且实用指数 <= 3，用 `> 💬 面试重点` callout 提醒。
+
+### Basic Workflow
+
 When user sends raw notes in the format above:
 
 **MUST DO:**
