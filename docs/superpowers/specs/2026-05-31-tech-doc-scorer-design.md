@@ -1,4 +1,4 @@
-# Spring Doc Scorer — Skill Design
+# Tech Doc Scorer — Skill Design
 
 > **日期:** 2026-05-31 | **状态:** 待审批
 
@@ -14,11 +14,11 @@
 
 ### 3.1 名称
 
-`spring-doc-scorer`
+`tech-doc-scorer`
 
 ### 3.2 触发方式
 
-- 显式调用：`/spring-doc-scorer <URL>`
+- 显式调用：`/tech-doc-scorer <URL>`
 - 自然语言：发 URL + "打分"/"评分"/"score"
 
 ### 3.3 核心流程
@@ -32,7 +32,7 @@ URL → Bing MCP 抓取页面内容
 
 ### 3.4 存储位置
 
-skill 文件存入 `C:\Users\Lawliet\.claude\skills\spring-doc-scorer.md`（用户级 skill），通过 skill-creator 创建。
+skill 文件存入 `C:\Users\Lawliet\.claude\skills\tech-doc-scorer.md`（用户级 skill），通过 skill-creator 创建。
 
 ## 4. 评分标准
 
@@ -105,7 +105,7 @@ skill 文件存入 `C:\Users\Lawliet\.claude\skills\spring-doc-scorer.md`（用�
 
 ## 7. 实现路径
 
-1. 通过 skill-creator 创建 `spring-doc-scorer` skill
+1. 通过 skill-creator 创建 `tech-doc-scorer` skill
 2. Skill 内容包含：评分标准、输出模板、Bing MCP 抓取步骤
-3. 在 CLAUDE.md 中可选地添加一句引用（如 "If you need to score a Spring doc page for relevance, invoke the /spring-doc-scorer skill"）
+3. 在 CLAUDE.md 中可选地添加一句引用（如 "If you need to score a Spring doc page for relevance, invoke the /tech-doc-scorer skill"）
 4. 手动测试：发一个 Spring 文档 URL 验证打分输出

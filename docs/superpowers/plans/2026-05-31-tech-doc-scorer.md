@@ -1,10 +1,10 @@
-# Spring Doc Scorer Implementation Plan
+# Tech Doc Scorer Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Create a standalone `spring-doc-scorer` skill that scores Spring documentation pages on practical utility and interview relevance, outputting results in chat only.
+**Goal:** Create a standalone `tech-doc-scorer` skill that scores Spring documentation pages on practical utility and interview relevance, outputting results in chat only.
 
-**Architecture:** Single SKILL.md file at `C:\Users\Lawliet\.claude\skills\spring-doc-scorer.md`. The skill instructs Claude to: fetch page via Bing MCP → parse h2/h3 sections → apply dual-dimension scoring (实用指数 + 面试指数) → output compact score report in chat. No file writes, no coupling with the note-taking workflow.
+**Architecture:** Single SKILL.md file at `C:\Users\Lawliet\.claude\skills\tech-doc-scorer.md`. The skill instructs Claude to: fetch page via Bing MCP → parse h2/h3 sections → apply dual-dimension scoring (实用指数 + 面试指数) → output compact score report in chat. No file writes, no coupling with the note-taking workflow.
 
 **Tech Stack:** Markdown SKILL.md format, Bing MCP for web fetching.
 
@@ -14,7 +14,7 @@
 
 ```
 C:\Users\Lawliet\.claude\skills\
-└── spring-doc-scorer.md    ← CREATE: the skill file (frontmatter + body)
+└── tech-doc-scorer.md    ← CREATE: the skill file (frontmatter + body)
 ```
 
 No changes to the study repo beyond this plan file.
@@ -24,7 +24,7 @@ No changes to the study repo beyond this plan file.
 ### Task 1: Write the Skill File
 
 **Files:**
-- Create: `C:\Users\Lawliet\.claude\skills\spring-doc-scorer.md`
+- Create: `C:\Users\Lawliet\.claude\skills\tech-doc-scorer.md`
 
 - [ ] **Step 1: Create the skill directory and write SKILL.md**
 
@@ -32,7 +32,7 @@ Write the complete skill file (see content below):
 
 ```markdown
 ---
-name: spring-doc-scorer
+name: tech-doc-scorer
 description: >
   Scores Spring Framework documentation pages by daily development practical utility
   (1-10) and interview relevance (1-10) for a freelancer targeting Upwork projects.
@@ -172,9 +172,9 @@ Skip the section table. Replace with: "本页各 section 实用价值接近，�
 
 - [ ] **Step 2: Verify the file was created**
 
-Run: `Get-Content C:\Users\Lawliet\.claude\skills\spring-doc-scorer.md | Select-Object -First 5`
+Run: `Get-Content C:\Users\Lawliet\.claude\skills\tech-doc-scorer.md | Select-Object -First 5`
 
-Expected: Frontmatter with `name: spring-doc-scorer`
+Expected: Frontmatter with `name: tech-doc-scorer`
 
 ---
 
@@ -212,6 +212,6 @@ Check that when sections have similar scores (spread < 3), the section table is 
 - [ ] **Step 5: Commit the plan**
 
 ```bash
-git add docs/superpowers/plans/2026-05-31-spring-doc-scorer.md
-git commit -m "docs: add spring-doc-scorer implementation plan"
+git add docs/superpowers/plans/2026-05-31-tech-doc-scorer.md
+git commit -m "docs: add tech-doc-scorer implementation plan"
 ```

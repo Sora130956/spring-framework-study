@@ -65,7 +65,7 @@ When user sends a URL (with or without annotations), **ALWAYS score first, then 
 
 **路径 A — 用户只发 URL：**
 1. Use BING MCP to fetch the page
-2. Score every major section using the `spring-doc-scorer` criteria（实用指数 + 面试指数）
+2. Score every major section using the `tech-doc-scorer` criteria（实用指数 + 面试指数）
 3. Output the scoring report in chat（按 section 顺序，每个标题一行）
 4. Wait for user to reply with their annotations/priorities before generating notes
 
